@@ -1,0 +1,59 @@
+version: '2'
+services:
+  db:
+    image: mysql:5.7
+    volumes:
+      - "./data:/var/lib/mysql"
+      - "./mysql/:/etc/mysql/conf.d/"
+    restart: always
+    ports:
+      - "3306:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: idaff
+      MYSQL_USER: root
+      MYSQL_PASSWORD: root
+  redis-server:
+    image: redis
+    ports:
+      - "6379:6379"
+    restart: always
+  # rabbitmq:
+  #   image: redis
+  #   ports:
+  #     - "5672:5672"
+  #   restart: always
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin
+    restart: always
+    depends_on:
+      - db
+    links:
+      - db
+    ports: 
+      - "8888:80"
+    environment:
+      PMA_USER: root
+      PMA_PASSWORD: root
+  php:
+    depends_on:
+      - db
+      - redis-server
+    image: ivankristianto/php7apache
+    links:
+      - db
+      - redis-server
+    ports:
+      - "80:80"
+    volumes:
+      - "./htdocs:/var/www/html"
+      - "./sites-enabled/:/etc/apache2/sites-enabled"
+    extra_hosts:
+      - "sample.dev:127.0.0.1"
+    restart: always
+    environment:
+      DB_HOST: db
+      DB_USER: root
+      DB_PASSWORD: root
+      SESS_DRIVER: redis
+      SESS_PATH: tcp://redis-server:6379
